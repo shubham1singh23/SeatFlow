@@ -1,0 +1,76 @@
+<mxfile host="app.diagrams.net" modified="2026-09-02T00:00:00.000Z" agent="SeatFlow-LLD" version="24.0.0">
+  <diagram name="Concurrency Class Diagram" id="concurrency-class-diagram">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="750" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" value="Concurrency Mechanism — Classes Responsible for the No-Double-Booking Invariant" style="text;html=1;fontSize=18;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="app" value="BookingApplicationService" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=center;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="90" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="shds" value="SeatHoldDomainService
+--
+claimSeats(showId, seatIds): Booking
+(all-or-nothing)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="430" y="210" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="app" target="shds">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="coord" value="SeatHoldCoordinator  «Redis»
+--
+tryClaim(showId, seatId, token, ttl): bool
+release(showId, seatId)
+--
+FAILS OPEN to &quot;not claimed&quot;
+(never fails open to &quot;available&quot;)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="150" y="380" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="1. fast-path
+admission check" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="shds" target="coord">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="repo" value="BookingRepository  «JPA»
+--
+insertBookingItems(items)
+  throws SeatUnavailableException
+  (on 23505 constraint violation)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="620" y="380" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="2. authoritative
+conditional insert" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="shds" target="repo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="idx" value="PostgreSQL
+uq_active_seat_claim
+--
+UNIQUE(show_id, seat_id)
+WHERE status IN
+('HELD','CONFIRMED')" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="620" y="560" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="enforced by" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="repo" target="idx">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="redisdb" value="Redis  «coordination cache,
+never source of truth»" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;align=center;verticalAlign=middle;dashed=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="560" width="300" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;" edge="1" parent="1" source="coord" target="redisdb">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="idem" value="IdempotencyService
+--
+same INSERT..ON CONFLICT
+pattern for command dedup" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="900" y="210" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.3;entryDx=0;entryDy=0;" edge="1" parent="1" source="app" target="idem">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

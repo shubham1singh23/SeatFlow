@@ -1,0 +1,80 @@
+<mxfile host="app.diagrams.net" modified="2026-09-02T00:00:00.000Z" agent="SeatFlow-LLD" version="24.0.0">
+  <diagram name="Booking Database Schema" id="database-schema">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1300" pageHeight="680" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="t" value="Booking Service — Database Schema (PostgreSQL)" style="text;html=1;fontSize=18;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="1100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="bookings" value="bookings
+--
+PK booking_id UUID
+   user_id UUID  (idx)
+   show_id UUID
+   status VARCHAR(20)
+   total_amount NUMERIC(12,2)
+   currency CHAR(3)
+   held_until TIMESTAMPTZ  (idx w/ status)
+   version BIGINT
+   created_at / updated_at TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="90" width="340" height="260" as="geometry" />
+        </mxCell>
+        <mxCell id="items" value="booking_items
+--
+PK booking_item_id UUID
+FK booking_id UUID -&gt; bookings
+   show_id UUID
+   seat_id UUID
+   price_at_hold NUMERIC(12,2)
+   status VARCHAR(20)
+   hold_token UUID
+   held_until TIMESTAMPTZ
+   created_at TIMESTAMPTZ
+--
+UNIQUE(show_id, seat_id)
+  WHERE status IN ('HELD','CONFIRMED')" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="60" y="400" width="340" height="290" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="1 -- N" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;labelBackgroundColor=#ffffff;align=center;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="bookings" target="items">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="idem" value="idempotency_records
+--
+PK (idempotency_key, user_id, operation)
+   request_fingerprint VARCHAR(64)
+   status VARCHAR(20)
+   response_snapshot JSONB
+   created_at TIMESTAMPTZ
+   expires_at TIMESTAMPTZ" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="480" y="90" width="340" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="outbox" value="outbox_events
+--
+PK event_id UUID
+   aggregate_id UUID (booking_id)
+   event_type VARCHAR(50)
+   payload JSONB
+   created_at TIMESTAMPTZ  (idx unpublished)
+   published_at TIMESTAMPTZ NULL
+   retry_count INT" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="480" y="400" width="340" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" value="No FK from idempotency_records
+or outbox_events to bookings —
+both are independent tables,
+referenced by value (aggregate_id)
+not by foreign key constraint." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="900" y="90" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="note2" value="The partial unique index on
+booking_items IS the mechanism
+that enforces the core system
+invariant — see ADR-001 / ADR-003
+and 08-concurrency-and-seat-locking.md" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="900" y="400" width="300" height="120" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
